@@ -21,6 +21,10 @@
             font-family: Arial, sans-serif;
         }
 
+        html {
+            scroll-behavior: smooth;
+        }
+
         body {
             background: #f4f7fb;
             color: #1f2937;
@@ -368,7 +372,9 @@
 
     <div class="cards">
 
-        <a class="card" href="pharmacy">
+        <!-- MEDICINE MANAGEMENT -->
+
+        <a class="card" href="pharmacy#medicines">
 
             <div class="icon">
                 💊
@@ -386,7 +392,9 @@
         </a>
 
 
-        <a class="card" href="pharmacy">
+        <!-- STOCK MANAGEMENT -->
+
+        <a class="card" href="pharmacy#stock">
 
             <div class="icon">
                 📦
@@ -404,7 +412,9 @@
         </a>
 
 
-        <a class="card" href="pharmacy">
+        <!-- EXPIRY TRACKING -->
+
+        <a class="card" href="pharmacy#expiry">
 
             <div class="icon">
                 ⏰
@@ -422,7 +432,9 @@
         </a>
 
 
-        <a class="card" href="pharmacy">
+        <!-- LOW STOCK -->
+
+        <a class="card" href="pharmacy#lowstock">
 
             <div class="icon">
                 ⚠️
@@ -454,33 +466,43 @@
         <div class="actions">
 
 
-            <a class="action" href="pharmacy">
+            <!-- SEARCH -->
+
+            <a class="action" href="pharmacy#search">
 
                 🔍 Search / View Medicines
 
             </a>
 
 
-            <a class="action" href="pharmacy">
+            <!-- STOCK -->
+
+            <a class="action" href="pharmacy#stock">
 
                 📦 Check Stock
 
             </a>
 
 
-            <a class="action" href="pharmacy">
+            <!-- EXPIRY -->
+
+            <a class="action" href="pharmacy#expiry">
 
                 ⏰ Expiry Tracking
 
             </a>
 
 
-            <a class="action" href="pharmacy">
+            <!-- LOW STOCK -->
+
+            <a class="action" href="pharmacy#lowstock">
 
                 ⚠️ Low Stock Alerts
 
             </a>
 
+
+            <!-- SUPPLIERS -->
 
             <a class="action" href="suppliers">
 
@@ -488,6 +510,8 @@
 
             </a>
 
+
+            <!-- ORDERS -->
 
             <a class="action" href="orders">
 
