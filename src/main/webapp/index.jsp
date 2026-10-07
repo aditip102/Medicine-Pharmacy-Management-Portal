@@ -10,7 +10,7 @@
     <meta name="viewport"
           content="width=device-width, initial-scale=1.0">
 
-    <title>Pharmacy Management Portal</title>
+    <title>Medicine & Pharmacy Management System</title>
 
     <style>
 
@@ -267,11 +267,7 @@
 
 <div class="navbar">
 
-    <h1>🏥 Pharmacy Management Portal</h1>
-
-    <span>
-        Medicine & Pharmacy Management System
-    </span>
+    <h1>💊 Medicine & Pharmacy Management System</h1>
 
 </div>
 
@@ -282,9 +278,7 @@
 
     <div class="welcome">
 
-        <h2>
-            Welcome to the Pharmacy Portal
-        </h2>
+        <h2>Welcome to the Medicine & Pharmacy Management System</h2>
 
         <p>
             Manage medicines, inventory, suppliers and customer orders
@@ -524,6 +518,7 @@
 
     </div>
 
+
 </div>
 
 
@@ -531,7 +526,7 @@
 
 <div class="footer">
 
-    © 2026 Pharmacy Management Portal
+    © 2026 Medicine & Pharmacy Management System
     | Java Web Application
 
 </div>
