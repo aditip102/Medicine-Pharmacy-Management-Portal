@@ -511,6 +511,10 @@
 
                 🛒 Customer Orders
 
+                <a class="action" href="cart">
+                    🛍️ Cart & Order Management
+                </a>
+
             </a>
 
 
