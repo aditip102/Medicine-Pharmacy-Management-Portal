@@ -1,3 +1,4 @@
+
 package com.pharmacy;
 
 import jakarta.servlet.ServletException;
@@ -8,8 +9,10 @@ import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
-import java.time.temporal.ChronoUnit;
+import java.util.List;
 
 @WebServlet("/pharmacy")
 public class PharmacyServlet extends HttpServlet {
@@ -18,56 +21,52 @@ public class PharmacyServlet extends HttpServlet {
 
     @Override
     public void init() throws ServletException {
-
         pharmacy = new Pharmacy();
 
-        // Add medicines to the pharmacy
-
-        pharmacy.addMedicine(
-                new Medicine(
-                        1,
-                        "Paracetamol",
-                        "Pain Relief",
-                        50.0,
-                        100,
-                        "2027-12-31"
-                )
-        );
-
-        pharmacy.addMedicine(
-                new Medicine(
-                        2,
-                        "Amoxicillin",
-                        "Antibiotic",
-                        120.0,
-                        50,
-                        "2027-06-30"
-                )
-        );
-
-        pharmacy.addMedicine(
-                new Medicine(
-                        3,
-                        "Cetirizine",
-                        "Allergy",
-                        80.0,
-                        25,
-                        "2026-11-30"
-                )
-        );
-
-        pharmacy.addMedicine(
-                new Medicine(
-                        4,
-                        "Azithromycin",
-                        "Antibiotic",
-                        150.0,
-                        8,
-                        "2026-10-20"
-                )
-        );
+        // Add demo medicines only when the shared inventory is empty.
+        if (pharmacy.getMedicines().isEmpty()) {
+            pharmacy.addMedicine(new Medicine(
+                    1, "Paracetamol", "Pain Relief", 50, 100, "2027-12-31"));
+            pharmacy.addMedicine(new Medicine(
+                    2, "Amoxicillin", "Antibiotic", 120, 50, "2027-06-30"));
+            pharmacy.addMedicine(new Medicine(
+                    3, "Cetirizine", "Allergy", 80, 25, "2026-11-30"));
+            pharmacy.addMedicine(new Medicine(
+                    4, "Azithromycin", "Antibiotic", 150, 8, "2026-10-20"));
+            pharmacy.addMedicine(new Medicine(
+                    5, "Ibuprofen", "Pain Relief", 65, 40, "2027-08-15"));
+            pharmacy.addMedicine(new Medicine(
+                    6, "Omeprazole", "Acidity", 90, 35, "2027-09-10"));
+            pharmacy.addMedicine(new Medicine(
+                    7, "Metformin", "Diabetes", 75, 60, "2027-11-20"));
+            pharmacy.addMedicine(new Medicine(
+                    8, "Vitamin C", "Supplement", 110, 45, "2028-01-15"));
+            pharmacy.addMedicine(new Medicine(
+                    9, "ORS", "Rehydration", 25, 80, "2027-07-31"));
+            pharmacy.addMedicine(new Medicine(
+                    10, "Loratadine", "Allergy", 70, 30, "2027-10-15"));
+            pharmacy.addMedicine(new Medicine(
+                    11, "Pantoprazole", "Acidity", 95, 20, "2027-12-10"));
+            pharmacy.addMedicine(new Medicine(
+                    12, "Diclofenac", "Pain Relief", 85, 18, "2027-05-30"));
+            pharmacy.addMedicine(new Medicine(
+                    13, "Multivitamin", "Supplement", 140, 55, "2028-03-31"));
+            pharmacy.addMedicine(new Medicine(
+                    14, "Calcium Tablets", "Supplement", 100, 32, "2027-09-25"));
+            pharmacy.addMedicine(new Medicine(
+                    15, "Cough Syrup", "Cough and Cold", 95, 22, "2027-04-30"));
+            pharmacy.addMedicine(new Medicine(
+                    16, "Antacid Tablets", "Acidity", 45, 6, "2027-08-20"));
+            pharmacy.addMedicine(new Medicine(
+                    17, "Nasal Saline Spray", "Nasal Care", 85, 28, "2027-11-30"));
+            pharmacy.addMedicine(new Medicine(
+                    18, "Antiseptic Solution", "First Aid", 75, 15, "2027-06-15"));
+            pharmacy.addMedicine(new Medicine(
+                    19, "Bandages", "First Aid", 30, 50, "2028-01-31"));
+            pharmacy.addMedicine(new Medicine(
+                    20, "Zinc Tablets", "Supplement", 60, 9, "2027-10-31"));
+        }
     }
-
 
     @Override
     protected void doGet(HttpServletRequest request,
@@ -76,686 +75,316 @@ public class PharmacyServlet extends HttpServlet {
 
         response.setContentType("text/html;charset=UTF-8");
 
+        String keyword = request.getParameter("search");
+        List<Medicine> medicines;
+
+        if (keyword != null && !keyword.trim().isEmpty()) {
+            medicines = pharmacy.searchMedicines(keyword);
+        } else {
+            medicines = pharmacy.getMedicines();
+        }
+
+        List<Medicine> allMedicines = pharmacy.getMedicines();
+
+        int lowStockCount = 0;
+        int expiredCount = 0;
+        LocalDate today = LocalDate.now();
+
+        for (Medicine medicine : allMedicines) {
+            if (medicine.getStock() <= 10) {
+                lowStockCount++;
+            }
+
+            try {
+                if (!LocalDate.parse(medicine.getExpiryDate()).isAfter(today)) {
+                    expiredCount++;
+                }
+            } catch (Exception ignored) {
+                // Invalid expiry dates are handled in the table.
+            }
+        }
+
         PrintWriter out = response.getWriter();
 
-        out.println("<!DOCTYPE html>");
-        out.println("<html lang='en'>");
-
-        out.println("<head>");
-
+        out.println("<!DOCTYPE html><html><head>");
         out.println("<meta charset='UTF-8'>");
-
-        out.println("<meta name='viewport' content='width=device-width, initial-scale=1.0'>");
-
+        out.println("<meta name='viewport' content='width=device-width, initial-scale=1'>");
         out.println("<title>Medicine Management</title>");
 
         out.println("<style>");
+        out.println("*{box-sizing:border-box}");
+        out.println("body{font-family:Arial,sans-serif;background:#f3f6fa;"
+                + "color:#243047;margin:0;padding:24px}");
+        out.println(".container{max-width:1250px;margin:auto}");
+        out.println(".panel{background:white;padding:22px;margin:18px 0;"
+                + "border-radius:12px;box-shadow:0 2px 10px #0000000d}");
+        out.println("h1{color:#145c4b;margin-bottom:8px}");
+        out.println("h2{font-size:20px;margin-top:0}");
+        out.println(".stats{display:flex;gap:12px;flex-wrap:wrap}");
+        out.println(".stat{flex:1;min-width:150px;background:#eaf4f0;"
+                + "padding:18px;border-radius:9px}");
+        out.println(".number{font-size:25px;font-weight:bold;color:#145c4b}");
+        out.println("input{padding:10px;margin:5px 3px;border:1px solid #ccd4df;"
+                + "border-radius:6px;max-width:100%}");
+        out.println("button{padding:10px 14px;margin:5px 3px;border:0;"
+                + "border-radius:6px;background:#16785e;color:white;cursor:pointer}");
+        out.println(".danger{background:#c0392b}.edit{background:#2867b2}");
+        out.println(".tablewrap{overflow-x:auto}");
+        out.println("table{border-collapse:collapse;width:100%;background:white}");
+        out.println("th,td{padding:11px;text-align:left;"
+                + "border-bottom:1px solid #e4e9ef;white-space:nowrap}");
+        out.println("th{background:#eaf4f0}");
+        out.println(".low{color:#c0392b;font-weight:bold}");
+        out.println(".expired{color:#c0392b;font-weight:bold}");
+        out.println(".soon{color:#a65b00;font-weight:bold}");
+        out.println(".message{padding:12px;background:#e5f6ec;"
+                + "border-radius:6px;margin:12px 0}");
+        out.println(".actions form{display:inline}");
+        out.println("a{color:#16785e}");
+        out.println("</style></head><body><div class='container'>");
 
-        out.println("* { box-sizing: border-box; }");
+        out.println("<h1>Medicine & Pharmacy Management</h1>");
+        out.println("<p>Manage medicines, inventory, expiry dates and stock levels.</p>");
 
-        out.println("html { scroll-behavior: smooth; }");
+        String message = request.getParameter("message");
+        if (message != null) {
+            out.println("<div class='message'>" + escape(message) + "</div>");
+        }
 
-        out.println("body {");
-        out.println("    margin: 0;");
-        out.println("    font-family: Arial, sans-serif;");
-        out.println("    background: #f4f7fb;");
-        out.println("    color: #1f2937;");
-        out.println("}");
+        // Dashboard summary
+        out.println("<div class='panel'><div class='stats'>");
+        out.println("<div class='stat'>Total Medicines<div class='number'>"
+                + allMedicines.size() + "</div></div>");
+        out.println("<div class='stat'>Low Stock<div class='number'>"
+                + lowStockCount + "</div></div>");
+        out.println("<div class='stat'>Expired / Expiring Today<div class='number'>"
+                + expiredCount + "</div></div>");
+        out.println("</div></div>");
 
-        out.println(".navbar {");
-        out.println("    background: #1769aa;");
-        out.println("    color: white;");
-        out.println("    padding: 20px 50px;");
-        out.println("}");
+        // Add medicine
+        out.println("<div class='panel'><h2 id='add'>Add Medicine</h2>");
+        out.println("<form method='post' action='pharmacy'>");
+        out.println("<input type='hidden' name='action' value='add'>");
+        out.println("<input type='number' name='id' placeholder='Medicine ID' min='1' required>");
+        out.println("<input name='name' placeholder='Medicine Name' required>");
+        out.println("<input name='category' placeholder='Category' required>");
+        out.println("<input type='number' name='price' placeholder='Price' min='0.01' step='0.01' required>");
+        out.println("<input type='number' name='stock' placeholder='Stock Quantity' min='0' required>");
+        out.println("<input type='date' name='expiryDate' required>");
+        out.println("<button type='submit'>Add Medicine</button>");
+        out.println("</form></div>");
 
-        out.println(".navbar h1 {");
-        out.println("    margin: 0;");
-        out.println("    font-size: 25px;");
-        out.println("}");
+        // Search and view medicines
+        out.println("<div class='panel'><h2>Search / View Medicines</h2>");
+        out.println("<form method='get' action='pharmacy'>");
+        out.println("<input name='search' placeholder='Search by ID, name or category' value='"
+                + escape(keyword == null ? "" : keyword) + "'>");
+        out.println("<button type='submit'>Search</button>");
+        out.println("<a href='pharmacy'>View All Medicines</a>");
+        out.println("</form></div>");
 
-        out.println(".container {");
-        out.println("    width: 90%;");
-        out.println("    max-width: 1200px;");
-        out.println("    margin: 40px auto;");
-        out.println("}");
+        // Edit medicine
+        out.println("<div class='panel'><h2 id='edit'>Edit Medicine</h2>");
+        out.println("<p>Enter the existing ID and all updated details.</p>");
+        out.println("<form method='post' action='pharmacy'>");
+        out.println("<input type='hidden' name='action' value='edit'>");
+        out.println("<input type='number' name='id' placeholder='Existing Medicine ID' min='1' required>");
+        out.println("<input name='name' placeholder='Updated Name' required>");
+        out.println("<input name='category' placeholder='Updated Category' required>");
+        out.println("<input type='number' name='price' placeholder='Updated Price' min='0.01' step='0.01' required>");
+        out.println("<input type='number' name='stock' placeholder='Updated Stock' min='0' required>");
+        out.println("<input type='date' name='expiryDate' required>");
+        out.println("<button class='edit' type='submit'>Update Medicine</button>");
+        out.println("</form></div>");
 
-        out.println(".header {");
-        out.println("    margin-bottom: 25px;");
-        out.println("}");
-
-        out.println(".header h2 {");
-        out.println("    margin-bottom: 8px;");
-        out.println("}");
-
-        out.println(".header p {");
-        out.println("    color: #6b7280;");
-        out.println("}");
-
-        out.println(".table-container {");
-        out.println("    background: white;");
-        out.println("    padding: 25px;");
-        out.println("    border-radius: 12px;");
-        out.println("    box-shadow: 0 4px 12px rgba(0,0,0,0.08);");
-        out.println("    overflow-x: auto;");
-        out.println("}");
-
-        out.println("table {");
-        out.println("    width: 100%;");
-        out.println("    border-collapse: collapse;");
-        out.println("}");
-
-        out.println("th {");
-        out.println("    background: #1769aa;");
-        out.println("    color: white;");
-        out.println("    padding: 14px;");
-        out.println("    text-align: left;");
-        out.println("}");
-
-        out.println("td {");
-        out.println("    padding: 14px;");
-        out.println("    border-bottom: 1px solid #e5e7eb;");
-        out.println("}");
-
-        out.println("tr:hover {");
-        out.println("    background: #f8fafc;");
-        out.println("}");
-
-        out.println(".stock-good {");
-        out.println("    color: #15803d;");
-        out.println("    font-weight: bold;");
-        out.println("}");
-
-        out.println(".stock-low {");
-        out.println("    color: #dc2626;");
-        out.println("    font-weight: bold;");
-        out.println("}");
-
-        out.println(".back {");
-        out.println("    display: inline-block;");
-        out.println("    margin-top: 25px;");
-        out.println("    padding: 12px 20px;");
-        out.println("    background: #1769aa;");
-        out.println("    color: white;");
-        out.println("    text-decoration: none;");
-        out.println("    border-radius: 8px;");
-        out.println("}");
-
-        out.println(".back:hover {");
-        out.println("    background: #12598f;");
-        out.println("}");
-
-        out.println("</style>");
-
-        out.println("</head>");
-
-        out.println("<body>");
-
-        // Navbar
-
-        out.println("<div class='navbar'>");
-
-        out.println("<h1>🏥 Pharmacy Management Portal</h1>");
-
-        out.println("</div>");
-
-
-        out.println("<div class='container'>");
-
-
-        // Header
-
-        out.println("<div class='header'>");
-
-        out.println("<h2>💊 Available Medicines</h2>");
-
-        out.println("<p>View medicines currently available in the pharmacy inventory.</p>");
-
-        out.println("</div>");
-
-
-        // ================= SEARCH SECTION =================
-
-        out.println("<div id='search'>");
-
-        out.println("<form method='get' action='pharmacy' style='margin-bottom:25px;'>");
-
-        out.println(
-                "<input type='text' name='search' placeholder='Enter medicine name...'"
-                        + " style='padding:12px;width:300px;border:1px solid #d1d5db;"
-                        + "border-radius:8px;font-size:15px;'>"
-        );
-
-        out.println(
-                "<button type='submit'"
-                        + " style='padding:12px 20px;margin-left:10px;"
-                        + "background:#1769aa;color:white;border:none;"
-                        + "border-radius:8px;cursor:pointer;'>"
-        );
-
-        out.println("🔍 Search");
-
-        out.println("</button>");
-
+        // Update stock only
+        out.println("<div class='panel'><h2 id='stock'>Update Stock Quantity</h2>");
+        out.println("<form method='post' action='pharmacy'>");
+        out.println("<input type='hidden' name='action' value='stock'>");
+        out.println("<input type='number' name='id' placeholder='Medicine ID' min='1' required>");
+        out.println("<input type='number' name='stock' placeholder='New Stock Quantity' min='0' required>");
+        out.println("<button type='submit'>Update Stock</button>");
         out.println("</form>");
-
+        out.println("<p>Medicines with 10 or fewer units are marked as low stock.</p>");
         out.println("</div>");
 
+        // Inventory table
+        out.println("<div class='panel'><h2>Medicine Inventory ("
+                + medicines.size() + ")</h2>");
 
-        // ================= STOCK SECTION =================
-
-        out.println("<div id='stock'>");
-
-        out.println("<form method='get' action='pharmacy' style='margin-bottom:25px;'>");
-
-        out.println(
-                "<input type='text' name='stockCheck' "
-                        + "placeholder='Enter medicine to check stock...'"
-                        + " style='padding:12px;width:300px;border:1px solid #d1d5db;"
-                        + "border-radius:8px;font-size:15px;'>"
-        );
-
-        out.println(
-                "<button type='submit'"
-                        + " style='padding:12px 20px;margin-left:10px;"
-                        + "background:#15803d;color:white;border:none;"
-                        + "border-radius:8px;cursor:pointer;'>"
-        );
-
-        out.println("📦 Check Stock");
-
-        out.println("</button>");
-
-        out.println("</form>");
-
-        out.println("</div>");
-
-
-        // ================= REQUEST PARAMETERS =================
-
-        String search = request.getParameter("search");
-
-        Medicine searchedMedicine = null;
-
-        String stockCheck = request.getParameter("stockCheck");
-
-        Medicine stockMedicine = null;
-
-
-        // Search medicine
-
-        if (search != null && !search.trim().isEmpty()) {
-
-            searchedMedicine = pharmacy.searchMedicine(search.trim());
-
+        if (keyword != null && !keyword.trim().isEmpty()) {
+            out.println("<p>Search results for: <b>" + escape(keyword) + "</b></p>");
         }
 
+        out.println("<div class='tablewrap'><table>");
+        out.println("<tr><th>ID</th><th>Name</th><th>Category</th>"
+                + "<th>Price</th><th>Stock</th><th>Expiry Date</th><th>Actions</th></tr>");
 
-        // Check stock
-
-        if (stockCheck != null && !stockCheck.trim().isEmpty()) {
-
-            stockMedicine = pharmacy.searchMedicine(stockCheck.trim());
-
+        if (medicines.isEmpty()) {
+            out.println("<tr><td colspan='7'>No medicines found.</td></tr>");
         }
 
-
-        // ================= STOCK RESULT =================
-
-        if (stockCheck != null && !stockCheck.trim().isEmpty()) {
-
-            out.println(
-                    "<div style='background:white;padding:20px;"
-                            + "border-radius:10px;margin-bottom:20px;"
-                            + "box-shadow:0 4px 12px rgba(0,0,0,0.08);'>"
-            );
-
-            if (stockMedicine == null) {
-
-                out.println(
-                        "<h3 style='color:#dc2626;'>"
-                                + "❌ Medicine not found</h3>"
-                );
-
-            } else if (pharmacy.checkStock(stockCheck.trim())) {
-
-                out.println(
-                        "<h3 style='color:#15803d;'>"
-                                + "✅ " + stockMedicine.getName()
-                                + " is in stock</h3>"
-                );
-
-                out.println(
-                        "<p>Available quantity: <strong>"
-                                + stockMedicine.getStock()
-                                + "</strong></p>"
-                );
-
-            } else {
-
-                out.println(
-                        "<h3 style='color:#dc2626;'>"
-                                + "⚠️ " + stockMedicine.getName()
-                                + " is out of stock</h3>"
-                );
-            }
-
-            out.println("</div>");
-        }
-
-
-        // ================= EXPIRY TRACKING =================
-
-        out.println(
-                "<div id='expiry' class='table-container' "
-                        + "style='margin-bottom:25px;'>"
-        );
-
-        out.println("<h2 style='margin-top:0;'>⏰ Expiry Tracking</h2>");
-
-        out.println(
-                "<p style='color:#6b7280;margin-bottom:20px;'>"
-                        + "Monitor medicine expiry dates and identify medicines "
-                        + "that need attention.</p>"
-        );
-
-        out.println("<table>");
-
-        out.println("<tr>");
-
-        out.println("<th>Medicine</th>");
-
-        out.println("<th>Expiry Date</th>");
-
-        out.println("<th>Status</th>");
-
-        out.println("</tr>");
-
-
-        LocalDate today = LocalDate.now();
-
-
-        for (Medicine medicine : pharmacy.getMedicines()) {
-
-            LocalDate expiryDate =
-                    LocalDate.parse(medicine.getExpiryDate());
-
-            long daysRemaining =
-                    ChronoUnit.DAYS.between(today, expiryDate);
-
-            String status;
-
-            String statusColor;
-
-
-            if (daysRemaining < 0) {
-
-                status = "🔴 Expired";
-
-                statusColor = "#dc2626";
-
-            } else if (daysRemaining <= 30) {
-
-                status = "🟠 Expiring Soon";
-
-                statusColor = "#ea580c";
-
-            } else {
-
-                status = "🟢 Safe";
-
-                statusColor = "#15803d";
-            }
-
-
+        for (Medicine medicine : medicines) {
             out.println("<tr>");
-
-            out.println(
-                    "<td><strong>"
-                            + medicine.getName()
-                            + "</strong></td>"
-            );
-
-            out.println(
-                    "<td>"
-                            + medicine.getExpiryDate()
-                            + "</td>"
-            );
-
-            out.println(
-                    "<td style='color:" + statusColor
-                            + ";font-weight:bold;'>"
-                            + status
-                            + "</td>"
-            );
-
-            out.println("</tr>");
-        }
-
-
-        out.println("</table>");
-
-        out.println("</div>");
-
-
-        // ================= LOW STOCK ALERTS =================
-
-        out.println(
-                "<div id='lowstock' class='table-container' "
-                        + "style='margin-bottom:25px;'>"
-        );
-
-        out.println("<h2 style='margin-top:0;'>⚠️ Low Stock Alerts</h2>");
-
-        out.println(
-                "<p style='color:#6b7280;margin-bottom:20px;'>"
-                        + "Medicines with stock of 10 or less require restocking."
-                        + "</p>"
-        );
-
-
-        boolean lowStockFound = false;
-
-
-        out.println("<table>");
-
-        out.println("<tr>");
-
-        out.println("<th>Medicine</th>");
-
-        out.println("<th>Category</th>");
-
-        out.println("<th>Current Stock</th>");
-
-        out.println("<th>Status</th>");
-
-        out.println("</tr>");
-
-
-        for (Medicine medicine : pharmacy.getMedicines()) {
+            out.println("<td>" + medicine.getId() + "</td>");
+            out.println("<td>" + escape(medicine.getName()) + "</td>");
+            out.println("<td>" + escape(medicine.getCategory()) + "</td>");
+            out.println("<td>₹" + String.format("%.2f", medicine.getPrice()) + "</td>");
 
             if (medicine.getStock() <= 10) {
-
-                lowStockFound = true;
-
-                out.println("<tr>");
-
-                out.println(
-                        "<td><strong>"
-                                + medicine.getName()
-                                + "</strong></td>"
-                );
-
-                out.println(
-                        "<td>"
-                                + medicine.getCategory()
-                                + "</td>"
-                );
-
-                out.println(
-                        "<td style='color:#dc2626;font-weight:bold;'>"
-                                + medicine.getStock()
-                                + "</td>"
-                );
-
-                out.println(
-                        "<td style='color:#dc2626;font-weight:bold;'>"
-                                + "⚠️ Low Stock - Restock Required"
-                                + "</td>"
-                );
-
-                out.println("</tr>");
+                out.println("<td class='low'>" + medicine.getStock()
+                        + " (Low Stock)</td>");
+            } else {
+                out.println("<td>" + medicine.getStock() + "</td>");
             }
-        }
 
+            String expiry = medicine.getExpiryDate();
 
-        if (!lowStockFound) {
+            try {
+                LocalDate expiryDate = LocalDate.parse(expiry);
 
-            out.println("<tr>");
+                if (!expiryDate.isAfter(today)) {
+                    out.println("<td class='expired'>" + escape(expiry)
+                            + " (Expired)</td>");
+                } else if (!expiryDate.isAfter(today.plusDays(30))) {
+                    out.println("<td class='soon'>" + escape(expiry)
+                            + " (Expiring Soon)</td>");
+                } else {
+                    out.println("<td>" + escape(expiry) + "</td>");
+                }
+            } catch (Exception e) {
+                out.println("<td>Invalid date</td>");
+            }
 
-            out.println(
-                    "<td colspan='4' style='text-align:center;"
-                            + "padding:25px;color:#15803d;font-weight:bold;'>"
-                            + "✅ All medicines have sufficient stock."
-                            + "</td>"
-            );
+            // Delete action
+            out.println("<td class='actions'>");
+            out.println("<form method='post' action='pharmacy' "
+                    + "onsubmit=\"return confirm('Delete this medicine?')\">");
+            out.println("<input type='hidden' name='action' value='delete'>");
+            out.println("<input type='hidden' name='id' value='"
+                    + medicine.getId() + "'>");
+            out.println("<button class='danger' type='submit'>Delete</button>");
+            out.println("</form></td>");
 
             out.println("</tr>");
         }
 
+        out.println("</table></div></div>");
+        out.println("<p><a href='index.jsp'>Back to Dashboard</a></p>");
+        out.println("</div></body></html>");
+    }
 
-        out.println("</table>");
+    @Override
+    protected void doPost(HttpServletRequest request,
+                          HttpServletResponse response)
+            throws ServletException, IOException {
 
-        out.println("</div>");
+        request.setCharacterEncoding("UTF-8");
 
+        String action = request.getParameter("action");
+        String message;
 
-        // ================= MEDICINE MANAGEMENT =================
+        try {
+            if ("add".equals(action)) {
+                int id = Integer.parseInt(request.getParameter("id"));
+                String name = request.getParameter("name").trim();
+                String category = request.getParameter("category").trim();
+                double price = Double.parseDouble(request.getParameter("price"));
+                int stock = Integer.parseInt(request.getParameter("stock"));
+                String expiryDate = request.getParameter("expiryDate");
 
-        out.println(
-                "<div id='medicines' class='table-container'>"
-        );
+                validateMedicine(name, category, price, stock, expiryDate);
 
-        out.println("<table>");
+                pharmacy.addMedicine(new Medicine(
+                        id, name, category, price, stock, expiryDate));
 
-        out.println("<tr>");
+                message = "Medicine added successfully.";
 
-        out.println("<th>ID</th>");
+            } else if ("edit".equals(action)) {
+                int id = Integer.parseInt(request.getParameter("id"));
+                String name = request.getParameter("name").trim();
+                String category = request.getParameter("category").trim();
+                double price = Double.parseDouble(request.getParameter("price"));
+                int stock = Integer.parseInt(request.getParameter("stock"));
+                String expiryDate = request.getParameter("expiryDate");
 
-        out.println("<th>Medicine</th>");
+                validateMedicine(name, category, price, stock, expiryDate);
 
-        out.println("<th>Category</th>");
+                message = pharmacy.editMedicine(
+                        id, name, category, price, stock, expiryDate)
+                        ? "Medicine updated successfully."
+                        : "Medicine ID not found.";
 
-        out.println("<th>Price</th>");
+            } else if ("delete".equals(action)) {
+                int id = Integer.parseInt(request.getParameter("id"));
 
-        out.println("<th>Stock</th>");
+                message = pharmacy.deleteMedicine(id)
+                        ? "Medicine deleted successfully."
+                        : "Medicine ID not found.";
 
-        out.println("<th>Expiry Date</th>");
+            } else if ("stock".equals(action)) {
+                int id = Integer.parseInt(request.getParameter("id"));
+                int stock = Integer.parseInt(request.getParameter("stock"));
 
-        out.println("<th>Days Remaining</th>");
-
-        out.println("</tr>");
-
-
-        // ================= SEARCH RESULT =================
-
-        if (search != null && !search.trim().isEmpty()) {
-
-            if (searchedMedicine != null) {
-
-                Medicine medicine = searchedMedicine;
-
-                String stockClass =
-                        medicine.getStock() <= 10
-                                ? "stock-low"
-                                : "stock-good";
-
-
-                // Calculate days remaining
-
-                LocalDate expiryDate =
-                        LocalDate.parse(medicine.getExpiryDate());
-
-                long daysRemaining =
-                        ChronoUnit.DAYS.between(
-                                LocalDate.now(),
-                                expiryDate
-                        );
-
-
-                out.println("<tr>");
-
-                out.println(
-                        "<td>"
-                                + medicine.getId()
-                                + "</td>"
-                );
-
-                out.println(
-                        "<td><strong>"
-                                + medicine.getName()
-                                + "</strong></td>"
-                );
-
-                out.println(
-                        "<td>"
-                                + medicine.getCategory()
-                                + "</td>"
-                );
-
-                out.println(
-                        "<td>₹"
-                                + medicine.getPrice()
-                                + "</td>"
-                );
-
-                out.println(
-                        "<td class='" + stockClass + "'>"
-                                + medicine.getStock()
-                                + "</td>"
-                );
-
-                out.println(
-                        "<td>"
-                                + medicine.getExpiryDate()
-                                + "</td>"
-                );
-
-                out.println("<td>");
-
-                if (daysRemaining < 0) {
-
-                    out.println(
-                            "<span style='color:#dc2626;font-weight:bold;'>"
-                                    + "Expired"
-                                    + "</span>"
-                    );
-
-                } else {
-
-                    out.println(daysRemaining + " days");
+                if (stock < 0) {
+                    throw new IllegalArgumentException(
+                            "Stock quantity cannot be negative.");
                 }
 
-                out.println("</td>");
-
-                out.println("</tr>");
+                message = pharmacy.updateStock(id, stock)
+                        ? "Stock quantity updated successfully."
+                        : "Medicine ID not found or invalid stock quantity.";
 
             } else {
-
-                out.println("<tr>");
-
-                out.println(
-                        "<td colspan='7' style='text-align:center;"
-                                + "padding:25px;color:#dc2626;font-weight:bold;'>"
-                );
-
-                out.println("❌ Medicine not found");
-
-                out.println("</td>");
-
-                out.println("</tr>");
+                message = "Invalid action.";
             }
 
-        } else {
-
-            // Display all medicines
-
-            for (Medicine medicine : pharmacy.getMedicines()) {
-
-                String stockClass =
-                        medicine.getStock() <= 10
-                                ? "stock-low"
-                                : "stock-good";
-
-
-                // Calculate days remaining
-
-                LocalDate expiryDate =
-                        LocalDate.parse(medicine.getExpiryDate());
-
-                long daysRemaining =
-                        ChronoUnit.DAYS.between(
-                                LocalDate.now(),
-                                expiryDate
-                        );
-
-
-                out.println("<tr>");
-
-                out.println(
-                        "<td>"
-                                + medicine.getId()
-                                + "</td>"
-                );
-
-                out.println(
-                        "<td><strong>"
-                                + medicine.getName()
-                                + "</strong></td>"
-                );
-
-                out.println(
-                        "<td>"
-                                + medicine.getCategory()
-                                + "</td>"
-                );
-
-                out.println(
-                        "<td>₹"
-                                + medicine.getPrice()
-                                + "</td>"
-                );
-
-                out.println(
-                        "<td class='" + stockClass + "'>"
-                                + medicine.getStock()
-                                + "</td>"
-                );
-
-                out.println(
-                        "<td>"
-                                + medicine.getExpiryDate()
-                                + "</td>"
-                );
-
-                out.println("<td>");
-
-                if (daysRemaining < 0) {
-
-                    out.println(
-                            "<span style='color:#dc2626;font-weight:bold;'>"
-                                    + "Expired"
-                                    + "</span>"
-                    );
-
-                } else {
-
-                    out.println(daysRemaining + " days");
-                }
-
-                out.println("</td>");
-
-                out.println("</tr>");
-            }
+        } catch (NumberFormatException e) {
+            message = "Enter valid numeric values.";
+        } catch (IllegalArgumentException e) {
+            message = e.getMessage();
         }
 
+        response.sendRedirect(
+                request.getContextPath() + "/pharmacy?message="
+                        + URLEncoder.encode(message, StandardCharsets.UTF_8));
+    }
 
-        out.println("</table>");
+    private void validateMedicine(String name, String category,
+                                  double price, int stock,
+                                  String expiryDate) {
+        if (name.isEmpty() || category.isEmpty()) {
+            throw new IllegalArgumentException(
+                    "Name and category cannot be empty.");
+        }
 
-        out.println("</div>");
+        if (price <= 0 || stock < 0) {
+            throw new IllegalArgumentException(
+                    "Price must be positive and stock cannot be negative.");
+        }
 
+        if (expiryDate == null || expiryDate.isBlank()) {
+            throw new IllegalArgumentException(
+                    "Please select an expiry date.");
+        }
 
-        // ================= BACK BUTTON =================
+        try {
+            LocalDate.parse(expiryDate);
+        } catch (Exception e) {
+            throw new IllegalArgumentException(
+                    "Please enter a valid expiry date.");
+        }
+    }
 
-        out.println(
-                "<a class='back' href='index.jsp'>"
-                        + "← Back to Dashboard"
-                        + "</a>"
-        );
+    private String escape(String value) {
+        if (value == null) {
+            return "";
+        }
 
-
-        out.println("</div>");
-
-        out.println("</body>");
-
-        out.println("</html>");
+        return value.replace("&", "&amp;")
+                .replace("<", "&lt;")
+                .replace(">", "&gt;")
+                .replace("\"", "&quot;")
+                .replace("'", "&#39;");
     }
 }
